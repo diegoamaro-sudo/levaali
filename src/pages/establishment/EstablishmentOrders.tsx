@@ -9,9 +9,7 @@ export default function EstablishmentOrders() {
   const { user } = useAuth() as { user: EstablishmentUser };
   const { addNotification, playSound } = useNotification();
   const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [needsCardMachine, setNeedsCardMachine] = useState(false);
-  const [isPaid, setIsPaid] = useState(false);
-  const [isCash, setIsCash] = useState(false);
+  const [paymentType, setPaymentType] = useState<'cash' | 'card_machine' | 'paid'>('cash');
   const [needsChange, setNeedsChange] = useState(false);
   const [cashDetails, setCashDetails] = useState({
     orderValue: '',
@@ -24,7 +22,7 @@ export default function EstablishmentOrders() {
   const calculatePrice = () => {
     const distance = 2.3; // Mock distance calculation
     const basePrice = distance * 1.50;
-    const returnPrice = needsCardMachine ? distance * 1.50 : 0;
+    const returnPrice = paymentType === 'card_machine' ? distance * 1.50 : 0;
     return basePrice + returnPrice;
   };
 
@@ -38,7 +36,7 @@ export default function EstablishmentOrders() {
       return;
     }
 
-    if (isCash && needsChange) {
+    if (paymentType === 'cash' && needsChange) {
       if (!cashDetails.orderValue || !cashDetails.customerPayment) {
         addNotification({
           title: 'Informações incompletas',
@@ -71,13 +69,13 @@ export default function EstablishmentOrders() {
       deliveryCity: user.city,
       distance: 2.3,
       basePrice: 3.45,
-      returnTrip: needsCardMachine,
-      returnPrice: needsCardMachine ? 3.45 : 0,
+      returnTrip: paymentType === 'card_machine',
+      returnPrice: paymentType === 'card_machine' ? 3.45 : 0,
       totalPrice,
       commission: totalPrice * 0.10,
       driverEarnings: totalPrice * 0.90,
-      paymentMethod: isPaid ? 'paid' : isCash ? 'cash' : 'card_machine',
-      cashDetails: isCash && needsChange ? {
+      paymentMethod: paymentType,
+      cashDetails: paymentType === 'cash' && needsChange ? {
         orderValue: parseFloat(cashDetails.orderValue),
         customerPayment: parseFloat(cashDetails.customerPayment),
         change: parseFloat(cashDetails.customerPayment) - parseFloat(cashDetails.orderValue)
@@ -90,9 +88,7 @@ export default function EstablishmentOrders() {
     
     // Reset form
     setDeliveryAddress('');
-    setNeedsCardMachine(false);
-    setIsPaid(false);
-    setIsCash(false);
+    setPaymentType('cash');
     setNeedsChange(false);
     setCashDetails({ orderValue: '', customerPayment: '', change: '' });
 
@@ -162,45 +158,42 @@ export default function EstablishmentOrders() {
 
         {/* Payment Options */}
         <div className="space-y-3">
-          <h4 className="font-medium text-white">Opções de pagamento:</h4>
+          <h4 className="font-medium text-white">Forma de pagamento:</h4>
           
           <label className="flex items-center space-x-3 cursor-pointer">
             <input
-              type="checkbox"
-              checked={needsCardMachine}
-              onChange={(e) => setNeedsCardMachine(e.target.checked)}
-              className="form-checkbox text-green-500 bg-gray-800 border-gray-600 rounded focus:ring-green-500"
+              type="radio"
+              name="paymentType"
+              checked={paymentType === 'cash'}
+              onChange={() => setPaymentType('cash')}
+              className="form-radio text-green-500 bg-gray-800 border-gray-600 focus:ring-green-500"
             />
-            <span className="text-gray-300">Minha entrega vai precisar levar sua maquineta?</span>
+            <span className="text-gray-300">PAGAMENTO EM DINHEIRO</span>
           </label>
 
           <label className="flex items-center space-x-3 cursor-pointer">
             <input
-              type="checkbox"
-              checked={isPaid}
-              onChange={(e) => setIsPaid(e.target.checked)}
-              className="form-checkbox text-green-500 bg-gray-800 border-gray-600 rounded focus:ring-green-500"
+              type="radio"
+              name="paymentType"
+              checked={paymentType === 'card_machine'}
+              onChange={() => setPaymentType('card_machine')}
+              className="form-radio text-green-500 bg-gray-800 border-gray-600 focus:ring-green-500"
             />
-            <span className="text-gray-300">MEU PEDIDO ESTÁ PAGO</span>
+            <span className="text-gray-300">PAGAMENTO MAQUINETA</span>
           </label>
 
           <label className="flex items-center space-x-3 cursor-pointer">
             <input
-              type="checkbox"
-              checked={isCash}
-              onChange={(e) => {
-                setIsCash(e.target.checked);
-                if (!e.target.checked) {
-                  setNeedsChange(false);
-                  setCashDetails({ orderValue: '', customerPayment: '', change: '' });
-                }
-              }}
-              className="form-checkbox text-green-500 bg-gray-800 border-gray-600 rounded focus:ring-green-500"
+              type="radio"
+              name="paymentType"
+              checked={paymentType === 'paid'}
+              onChange={() => setPaymentType('paid')}
+              className="form-radio text-green-500 bg-gray-800 border-gray-600 focus:ring-green-500"
             />
-            <span className="text-gray-300">MEU PEDIDO SERÁ EM DINHEIRO</span>
+            <span className="text-gray-300">PEDIDO PAGO</span>
           </label>
 
-          {isCash && (
+          {paymentType === 'cash' && (
             <div className="ml-6 space-y-3">
               <label className="flex items-center space-x-3 cursor-pointer">
                 <input
@@ -237,7 +230,7 @@ export default function EstablishmentOrders() {
           <p className="text-green-400 font-semibold">
             Valor estimado: R$ {calculatePrice().toFixed(2)}
           </p>
-          {needsCardMachine && (
+          {paymentType === 'card_machine' && (
             <p className="text-sm text-gray-400">Inclui volta para devolver maquineta</p>
           )}
         </div>
