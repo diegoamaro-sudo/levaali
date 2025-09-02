@@ -21,8 +21,9 @@ export default function EstablishmentOrders() {
 
   const calculatePrice = () => {
     const distance = 2.3; // Mock distance calculation
-    const basePrice = distance * 1.50;
-    const returnPrice = paymentType === 'card_machine' ? distance * 1.50 : 0;
+    const pricePerKm = 1.50; // This would come from admin settings
+    const basePrice = distance * pricePerKm;
+    const returnPrice = (paymentType === 'cash' || paymentType === 'card_machine') ? distance * pricePerKm : 0;
     return basePrice + returnPrice;
   };
 
@@ -69,8 +70,8 @@ export default function EstablishmentOrders() {
       deliveryCity: user.city,
       distance: 2.3,
       basePrice: 3.45,
-      returnTrip: paymentType === 'card_machine',
-      returnPrice: paymentType === 'card_machine' ? 3.45 : 0,
+      returnTrip: paymentType === 'cash' || paymentType === 'card_machine',
+      returnPrice: (paymentType === 'cash' || paymentType === 'card_machine') ? 3.45 : 0,
       totalPrice,
       commission: totalPrice * 0.10,
       driverEarnings: totalPrice * 0.90,
@@ -164,11 +165,22 @@ export default function EstablishmentOrders() {
             <input
               type="radio"
               name="paymentType"
+              checked={paymentType === 'paid'}
+              onChange={() => setPaymentType('paid')}
+              className="form-radio text-green-500 bg-gray-800 border-gray-600 focus:ring-green-500"
+            />
+            <span className="text-gray-300">PEDIDO PAGO</span>
+          </label>
+
+          <label className="flex items-center space-x-3 cursor-pointer">
+            <input
+              type="radio"
+              name="paymentType"
               checked={paymentType === 'cash'}
               onChange={() => setPaymentType('cash')}
               className="form-radio text-green-500 bg-gray-800 border-gray-600 focus:ring-green-500"
             />
-            <span className="text-gray-300">PAGAMENTO EM DINHEIRO</span>
+            <span className="text-gray-300">PAGAMENTO DINHEIRO</span>
           </label>
 
           <label className="flex items-center space-x-3 cursor-pointer">
@@ -179,48 +191,15 @@ export default function EstablishmentOrders() {
               onChange={() => setPaymentType('card_machine')}
               className="form-radio text-green-500 bg-gray-800 border-gray-600 focus:ring-green-500"
             />
-            <span className="text-gray-300">PAGAMENTO MAQUINETA</span>
+            <span className="text-gray-300">PAGAMENTO CARTÃO</span>
           </label>
 
-          <label className="flex items-center space-x-3 cursor-pointer">
-            <input
-              type="radio"
-              name="paymentType"
-              checked={paymentType === 'paid'}
-              onChange={() => setPaymentType('paid')}
-              className="form-radio text-green-500 bg-gray-800 border-gray-600 focus:ring-green-500"
-            />
-            <span className="text-gray-300">PEDIDO PAGO</span>
-          </label>
-
-          {paymentType === 'cash' && (
-            <div className="ml-6 space-y-3">
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={needsChange}
-                  onChange={(e) => setNeedsChange(e.target.checked)}
-                  className="form-checkbox text-green-500 bg-gray-800 border-gray-600 rounded focus:ring-green-500"
-                />
-                <span className="text-gray-300">Seu pedido precisa levar troco?</span>
-              </label>
-              
-              {needsChange && (
-                <textarea
-                  value={`Valor do pedido: R$ ${cashDetails.orderValue}\nCliente pagará: R$ ${cashDetails.customerPayment}\nTroco: R$ ${cashDetails.change}`}
-                  onChange={(e) => {
-                    const lines = e.target.value.split('\n');
-                    setCashDetails({
-                      orderValue: lines[0]?.replace(/[^\d.,]/g, '') || '',
-                      customerPayment: lines[1]?.replace(/[^\d.,]/g, '') || '',
-                      change: lines[2]?.replace(/[^\d.,]/g, '') || ''
-                    });
-                  }}
-                  placeholder="Valor do pedido: R$ 25,00&#10;Cliente pagará: R$ 30,00&#10;Troco: R$ 5,00"
-                  className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white focus:border-green-500 focus:outline-none resize-none"
-                  rows={3}
-                />
-              )}
+          {(paymentType === 'cash' || paymentType === 'card_machine') && (
+            <div className="ml-6 p-3 bg-yellow-900/30 border border-yellow-600 rounded-lg">
+              <p className="text-yellow-200 text-sm">
+                ⚠️ O entregador precisará retornar ao estabelecimento após a entrega.
+                Será cobrado o valor de retorno baseado na distância.
+              </p>
             </div>
           )}
         </div>
@@ -230,8 +209,8 @@ export default function EstablishmentOrders() {
           <p className="text-green-400 font-semibold">
             Valor estimado: R$ {calculatePrice().toFixed(2)}
           </p>
-          {paymentType === 'card_machine' && (
-            <p className="text-sm text-gray-400">Inclui volta para devolver maquineta</p>
+          {(paymentType === 'cash' || paymentType === 'card_machine') && (
+            <p className="text-sm text-gray-400">Inclui valor de retorno ao estabelecimento</p>
           )}
         </div>
 
